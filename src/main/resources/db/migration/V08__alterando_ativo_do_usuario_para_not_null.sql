@@ -1,0 +1,3 @@
+ALTER TABLE usuario
+	ALTER COLUMN ativo set NOT NULL;
+	

@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<entity-mappings xmlns="http://xmlns.jcp.org/xml/ns/persistence/orm"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/persistence/orm http://xmlns.jcp.org/xml/ns/persistence/orm_2_1.xsd"
+	version="2.1">
+	
+	<named-native-query name="Vendas.totalPorMes" result-set-mapping="totalPorMesMapping">
+		<query>
+			SELECT 
+				  TO_CHAR(DATA_CRIACAO, 'YYYY/MM') MES
+	     		, COUNT(*) TOTAL
+			FROM VENDA
+			WHERE DATA_CRIACAO > (NOW() - INTERVAL '6 MONTH')	
+			AND STATUS = 'EMITIDA'
+			GROUP BY MES
+			ORDER BY MES
+		</query>
+	</named-native-query>	
+	
+	<named-native-query name="Vendas.totalPorMesOrigem" result-set-mapping="totalPorMesOrigemMapping">
+		<query>
+			  SELECT TO_CHAR(V.DATA_CRIACAO, 'YYYY/MM') MES,
+			       SUM(CASE
+			               WHEN C.ORIGEM = 'NACIONAL' THEN I.QUANTIDADE
+			               ELSE 0
+			           END) TOTAL_NACIONAL,
+			       SUM(CASE
+			               WHEN C.ORIGEM = 'INTERNACIONAL' THEN I.QUANTIDADE
+			               ELSE 0
+			           END) TOTAL_INTERNACIONAL
+			FROM ITEM_VENDA I,
+			     VENDA V,
+			     CERVEJA C
+			WHERE I.CODIGO_VENDA = V.CODIGO
+			  AND I.CODIGO_CERVEJA = C.CODIGO
+			  AND V.DATA_CRIACAO > (NOW() - INTERVAL '6 MONTH')
+			  AND V.STATUS = 'EMITIDA'
+			  AND (C.ORIGEM = 'INTERNACIONAL'
+			       OR C.ORIGEM = 'NACIONAL')
+			GROUP BY MES
+			ORDER BY MES	
+		</query>
+	</named-native-query>
+	
+	<sql-result-set-mapping name="totalPorMesMapping">
+		<constructor-result target-class="com.algaworks.brewer.dto.VendaMes">
+			<column name="mes" class="java.lang.String"/>
+			<column name="total" class="java.lang.Integer"/>
+		</constructor-result>
+	</sql-result-set-mapping>
+
+	<sql-result-set-mapping name="totalPorMesOrigemMapping">
+		<constructor-result target-class="com.algaworks.brewer.dto.VendaOrigem">
+			<column name="mes" class="java.lang.String"/>
+			<column name="total_nacional" class="java.lang.Integer"/>
+			<column name="total_internacional" class="java.lang.Integer"/>
+		</constructor-result>
+	</sql-result-set-mapping>
+	
+</entity-mappings>
